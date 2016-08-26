@@ -53,24 +53,41 @@ class partition_fxn_sample {
     }
 };
 
+template <typename Num>
 class progressBar {
+    Num full;
+    Num current;
+    std::ostream* stream;
   public:
-    void initialize(std::ostream& output) {
+    progressBar(void) {
+        this->full = this->current = 0;
+        this->stream = nullptr;
+    }
+    void initialize(std::ostream& output, const Num total) {
+        // set the 100% mark
+        this->full = total;
+        // save the pointer to the stream
+        this->stream = &output;
         // print out the initial, empty indicator
-        output << '[';
+        *(this->stream) << '[';
         for (unsigned int i = 0; i < 100; i++) {
-            output << ' ';
+            *(this->stream) << ' ';
         }
         // cap off the progress bar and return to the beginning of the line
-        output << "]\r[";
+        *(this->stream) << "]\r[";
         // flush the buffer to make sure everything prints
-        output.flush();
+        this->stream->flush();
     }
-    void increment(std::ostream& output) {
-        // increment with a pipe
-        output << '|';
-        // ensure it's printed
-        output.flush();
+    void increment(std::ostream& output, const Num now) {
+        Num frac = static_cast<Num>(100*static_cast<double>(now)/this->full);
+        Num diff = frac - this->current;
+        for (Num i = 0; i < diff; i++) {
+            // increment with a pipe
+            *(this->stream) << '|';
+            // ensure it's printed
+            this->stream->flush();
+        }
+        this->current = frac;
     }
 };
 
@@ -156,7 +173,7 @@ void console_io_partition(void) {
     partition_fxn_sample* sample = nullptr; // sample array
     std::ofstream file; // the file to save to
     std::string filename; // the name of the file to save the results to
-    progressBar bar; // progress bar manipulator
+    progressBar<unsigned int> bar; // progress bar manipulator
     // variables
     unsigned int states; // the number of states in the partition function
     mpf_float_1000* E = nullptr; // array of state energies
@@ -186,8 +203,14 @@ void console_io_partition(void) {
     if (T_min < 0.0) {
         T_min = 1e-10;
     }
-    if (T_max < T_min || T_max < 0) {
-        T_max = 300;
+    if (T_max < 0.0) {
+        T_max = T_min + 25.0;
+    }
+    // if the max and min are backwards, silently fix it
+    if (T_min > T_max) {
+        double temp = T_min;
+        T_min = T_max;
+        T_max = temp;
     }
 
     // calculate the number of samples
@@ -208,7 +231,7 @@ void console_io_partition(void) {
 
     cout << "Please wait . . .\n";
     // display the progress bar
-    bar.initialize(cout);
+    bar.initialize(cout, steps);
     
     // initialize the array
     for (unsigned int i = 0; i < steps; i++) {
@@ -238,11 +261,8 @@ void console_io_partition(void) {
             sample[i].P[j] /= sample[i].Z;
         }
         
-        double pct_done = static_cast<double>(i) / static_cast<double>(steps);
         // let the user know the program hasn't died yet
-        if (static_cast<unsigned int>(pct_done*100) % 10 == 0) {
-            bar.increment(cout);
-        }
+        bar.increment(cout, i);
     }
     cout << "\nDone! Saving . . .\n\n";
 
