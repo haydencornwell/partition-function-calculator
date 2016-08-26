@@ -1,5 +1,5 @@
 /*
- * NOTE: You MUST compile with the -lgmp and -lgmpxx options or the linkage will fail!
+ * NOTE: You must compile with the -lgmp, -lgmpxx, and -std=c++11 options or the linkage will fail.
  * Performs a series of calculations involving large numbers and wily functions.
  * @author      Hayden Cornwell
  */
