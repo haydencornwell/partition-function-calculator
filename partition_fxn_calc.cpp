@@ -58,10 +58,17 @@ class progressBar {
     Num full;
     Num current;
     std::ostream* stream;
+    unsigned int width;
   public:
     progressBar(void) {
         this->full = this->current = 0;
         this->stream = nullptr;
+        this->width = 80;
+    }
+    progressBar(unsigned int w) {
+        this->full = this->current = 0;
+        this->stream = nullptr;
+        this->width = w;
     }
     void initialize(std::ostream& output, const Num total) {
         // set the 100% mark
@@ -70,16 +77,16 @@ class progressBar {
         this->stream = &output;
         // print out the initial, empty indicator
         *(this->stream) << '[';
-        for (unsigned int i = 0; i < 100; i++) {
+        for (unsigned int i = 0; i < (this->width-2); i++) {
             *(this->stream) << ' ';
         }
         // cap off the progress bar and return to the beginning of the line
-        *(this->stream) << "]\r[";
+        *(this->stream) << "]\r[|";
         // flush the buffer to make sure everything prints
         this->stream->flush();
     }
-    void increment(std::ostream& output, const Num now) {
-        Num frac = static_cast<Num>(100*static_cast<double>(now)/this->full);
+    void increment(const Num now) {
+        Num frac = static_cast<Num>((this->width) * static_cast<double>(now) / this->full);
         Num diff = frac - this->current;
         for (Num i = 0; i < diff; i++) {
             // increment with a pipe
@@ -88,6 +95,10 @@ class progressBar {
             this->stream->flush();
         }
         this->current = frac;
+    }
+    ~progressBar(void) {
+        this->full = this->current = 0;
+        this->stream = nullptr;
     }
 };
 
@@ -173,7 +184,7 @@ void console_io_partition(void) {
     partition_fxn_sample* sample = nullptr; // sample array
     std::ofstream file; // the file to save to
     std::string filename; // the name of the file to save the results to
-    progressBar<unsigned int> bar; // progress bar manipulator
+    progressBar<unsigned int> bar(100); // progress bar manipulator
     // variables
     unsigned int states; // the number of states in the partition function
     mpf_float_1000* E = nullptr; // array of state energies
@@ -204,7 +215,7 @@ void console_io_partition(void) {
         T_min = 1e-10;
     }
     if (T_max < 0.0) {
-        T_max = T_min + 25.0;
+        T_max = T_min + 10 * step_size;
     }
     // if the max and min are backwards, silently fix it
     if (T_min > T_max) {
@@ -235,7 +246,6 @@ void console_io_partition(void) {
     
     // initialize the array
     for (unsigned int i = 0; i < steps; i++) {
-        sample[i].Z = 0.0;
         sample[i].P = new mpf_float_1000[states];
         sample[i].n = states;
         for (unsigned int j = 0; j < states; j++) {
@@ -262,7 +272,7 @@ void console_io_partition(void) {
         }
         
         // let the user know the program hasn't died yet
-        bar.increment(cout, i);
+        bar.increment(i);
     }
     cout << "\nDone! Saving . . .\n\n";
 
@@ -290,13 +300,7 @@ void console_io_partition(void) {
     }
     
     // deallocate everything
-    for (unsigned int i = 0; i < steps; i++) {
-        sample[i].Z = 0.0;
-        delete [] sample[i].P;
-        sample[i].P = nullptr;
-        sample[i].n = 0;
-    }
-    delete [] sample;
+    delete [] sample; // the destructors take care of the objects' pointers
     sample = nullptr;
 }
 
@@ -373,7 +377,7 @@ Numerical factorial(const Numerical n) {
  * @param num           the numer of '=' to print
  */
 void printequals(std::ostream& output, const unsigned int num) {
-    for (int i = 0; i < num; i++) {
+    for (unsigned int i = 0; i < num; i++) {
         output << '=';
     }
 }
