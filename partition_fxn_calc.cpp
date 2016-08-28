@@ -16,42 +16,7 @@
 #include <boost/multiprecision/gmp.hpp>
     using namespace boost::multiprecision;
 
-/////////////////////////////
-///// Enums and Objects /////
-/////////////////////////////
-
-enum MenuPick {
-    tetration,
-    factorials,
-    exponentiate,
-    partition,
-    quit
-};
-
-class partition_fxn_sample {
-  public:
-    ~partition_fxn_sample(void);
-    partition_fxn_sample(const unsigned int);
-    partition_fxn_sample(void);
-    mpf_float_1000 tau; // fundamental temperature
-    mpf_float_1000 Z; // partition function at tau
-    mpf_float_1000* P; // owning pointer to state probability array
-    unsigned short int n; // size of state probability array
-};
-
-template <typename Num>
-class progressBar {
-    Num full;
-    Num current;
-    std::ostream* stream;
-    unsigned int width;
-  public:
-    ~progressBar(void);
-    progressBar(void);
-    progressBar(unsigned int);
-    void initialize(std::ostream&, const Num);
-    void increment(const Num);
-};
+#include "hpmath.hpp"
 
 //////////////////////
 ///// prototypes /////
@@ -62,18 +27,11 @@ void        console_io_factorial(void);
 void        console_io_partition(void);
 void        console_io_tetration(void);
 void        display_menu(void);
-template <typename Numerical>
-Numerical   exp(const Numerical);
-template <typename Numerical>
-Numerical   factorial(const Numerical);
 template <typename T>
 bool        getInput(std::istream&, T&);
 template <typename T>
 bool        getRangedInput(std::istream&, T&, const T, const T);
-void        printequals(std::ostream&, const unsigned int);
 MenuPick    read_choice(std::istream&);
-template <typename Numerical>
-Numerical   tetrate(const Numerical, const unsigned int);
 
 //////////////////
 ///// main() /////
@@ -104,96 +62,25 @@ int main(void) {
     return 0;
 }
 
-///////////////////////////////////////
-///// Member Function Definitions /////
-///////////////////////////////////////
-
-/* class partition_fxn_sample */
-
-partition_fxn_sample::~partition_fxn_sample(void) {
-    // clean up
-    delete [] this->P;
-    this->P = nullptr;
-    this->n = 0;
-}
-
-partition_fxn_sample::partition_fxn_sample(void) {
-    // empty
-    this->tau = this->Z = 0.0;
-    this->P = nullptr;
-    this->n = 0;
-}
-
-partition_fxn_sample::partition_fxn_sample(const unsigned int numstates) {
-    // allocate the probability state array
-    this->P = new mpf_float_1000[numstates];
-    this->n = numstates;
-}
-
-/* class progressBar */
-
-template <typename Num>
-progressBar<Num>::~progressBar(void) {
-    this->full = this->current = 0;
-    this->stream = nullptr;
-}
-
-template <typename Num>
-progressBar<Num>::progressBar(void) {
-    this->full = this->current = 0;
-    this->stream = nullptr;
-    this->width = 80;
-}
-
-template <typename Num>
-progressBar<Num>::progressBar(unsigned int w) {
-    this->full = this->current = 0;
-    this->stream = nullptr;
-    this->width = w;
-}
-
-template <typename Num>
-void progressBar<Num>::initialize(std::ostream& output, const Num total) {
-    // set the 100% mark
-    this->full = total;
-    // save the pointer to the stream
-    this->stream = &output;
-    // print out the initial, empty indicator
-    *(this->stream) << '[';
-    for (unsigned int i = 0; i < (this->width-1); i++) {
-        *(this->stream) << ' ';
-    }
-    // cap off the progress bar and return to the beginning of the line
-    *(this->stream) << "]\r[|";
-    // flush the buffer to make sure everything prints
-    this->stream->flush();
-}
-
-template <typename Num>
-void progressBar<Num>::increment(const Num now) {
-    Num frac = static_cast<Num>((this->width) * static_cast<double>(now) / this->full);
-    Num diff = frac - this->current;
-    for (Num i = 0; i < diff; i++) {
-        // increment with a pipe
-        *(this->stream) << '|';
-        // ensure it's printed
-        this->stream->flush();
-    }
-    this->current = frac;
-}
-
-/////////////////////////////
-///// Support Functions /////
-/////////////////////////////
+///////////////////////////////////
+///// Free-floating functions /////
+///////////////////////////////////
 
 void console_io_exponential(void) {
     mpf_float_1000 x = 0.0;
     //unsigned int terms = 0;
     mpf_float_1000 result = 0.0;
-    cout << "Enter the number to exponentiate: ";
-    cin  >> x;
+    cout << "\nEnter the number to exponentiate: ";
+    bool good;
+    do {
+        good = getInput(cin, x);
+        if (!good) {
+            cout << "Please enter a number: ";
+        }
+    } while (!good);
     result = exp(x);
-    cout << "The result of exp(" << x << ") is " << std::setprecision(50) << result << "\n";
+    cout << "The result of exp(" << x << ") is " << std::setprecision(50)
+         << result << "\n\n";
 }
 
 /*
@@ -202,10 +89,16 @@ void console_io_exponential(void) {
 void console_io_factorial(void) {
     mpz_int n = 0;
     mpz_int result = 0;
-    cout << "Please enter an integer: ";
-    cin  >> n;
+    cout << "\nPlease enter an integer: ";
+    bool good;
+    do {
+        good = getInput(cin, n);
+        if (!good || n < 0) {
+            cout << "Please enter a nonnegative integer: ";
+        }
+    } while (!good || n < 0);
     result = factorial(n);
-    cout << "The result of " << n << "! is " << result << "\n";
+    cout << "The result of " << n << "! is " << result << "\n\n";
 }
 
 /*
@@ -348,15 +241,26 @@ void console_io_partition(void) {
  */
 void console_io_tetration(void) {
     mpf_float_1000 base = 0.0;
-    unsigned int hyperpower = 0;
+    int hyperpower = 0;
     mpf_float_1000 tetration_result = 0.0;
-    cout << "Please enter a base (a): ";
-    cin  >> base;
+    bool good;
+    cout << "\nPlease enter a base (a): ";
+    do {
+        good = getInput(cin, base);
+        if (!good) {
+            cout << "Please enter a number: ";
+        }
+    } while (!good);
     cout << "Please enter a hyperpower (n): ";
-    cin  >> hyperpower;
+    do {
+        good = getInput(cin, hyperpower);
+        if (!good) {
+            cout << "Please enter an integer: ";
+        }
+    } while (!good);
     tetration_result = tetrate(base, hyperpower);
     cout << "The result of " << base << "^^" << hyperpower
-         << " is " << tetration_result << "\n";
+         << " is " << tetration_result << "\n\n";
 }
 
 /*
@@ -369,45 +273,6 @@ void display_menu(void) {
          << "3. Exponentiate a real number\n"
          << "4. Evaluate the double-polymer electrode's partition function\n"
          << "5. Exit program\n";
-}
-
-/*
- * Raises Euler's number to a power (doesn't stop until all digits are filled!)
- * @param x             the number to raise e to
- * @return              the result
- */
-template <typename Numerical>
-Numerical exp(const Numerical x) {
-    Numerical result = 1.0; // 0th term == 1
-    Numerical prev = 0.0;
-    unsigned long long int i = 1;
-    // e^x == \Sum_{n==0}^{Inf} \frac{x^n}{n!}
-    while (result != prev && i <= std::numeric_limits<unsigned long long int>::max()) {
-        prev = result;
-        Numerical numerator = 1.0;
-        // x^i on index i without using double pow(mpf_float_1000, mpz_int)
-        for (unsigned long long int j = 1; j <= i; j++) {
-            numerator *= x;
-        }
-        result += numerator / factorial(i);
-        i++;
-    }
-
-    return result;
-}
-
-/*
- * calculate a factorial of a nonnegative integer
- */
-template <typename Numerical>
-Numerical factorial(const Numerical n) {
-    Numerical result = 1;
-    // will just return 1 if the argument is < 2
-    for (Numerical i = 2; i <= n; i++) {
-        result *= i;
-    }
-
-    return result;
 }
 
 /*
@@ -456,17 +321,6 @@ bool getRangedInput(std::istream& input, T& value, const T min, const T max) {
 }
 
 /*
- * print a number of equals signs to output
- * @param output        the output stream to write equals signs to
- * @param num           the numer of '=' to print
- */
-void printequals(std::ostream& output, const unsigned int num) {
-    for (unsigned int i = 0; i < num; i++) {
-        output << '=';
-    }
-}
-
-/*
  * get the selection from the user (or a file, in principle)
  * @param input         the input stream to read
  * @return              the selection
@@ -474,8 +328,13 @@ void printequals(std::ostream& output, const unsigned int num) {
 MenuPick read_choice(std::istream& input) {
     MenuPick sel;
     int entered;
-    input >> entered;
-    input.ignore(1);
+    bool good;
+    do {
+        good = getRangedInput(cin, entered, 1, 5);
+        if (!good) {
+            cout << "Please enter a number between 1 and 5: ";
+        }
+    } while (!good);
     if (entered == 1) {
         sel = tetration;
     }
@@ -493,35 +352,4 @@ MenuPick read_choice(std::istream& input) {
     }
 
     return sel;
-}
-
-/*
- * A template for a tetration function which calculates a power tower for
- * positive hyperpowers and repeated roots for negative hyperpowers
- * @ param base         the number to be tetrated
- * @ param hyperpower   the height of the power/root tower
- * @ return             the result of the tetration
- */
-template <typename Numerical>
-Numerical tetrate(const Numerical base, const unsigned int hyperpower) {
-    Numerical result = base;
-    // repeated exponentiation for positive hyperpowers
-    if (hyperpower > 0) {
-        for (int i = 1; i < hyperpower; i++) {
-            result = pow(base, result);
-        }
-    }
-    // repeated roots for negative powers
-    else if (hyperpower < 0 && base >= 0) {
-        // decrement since the hyperpower is negative
-        for (int i = -1; i > hyperpower; i--) {
-            result = pow(base, 1/result);
-        }
-    }
-    // return 1.00 for zero powers
-    else {
-        result = 1;
-    }
-    
-    return result;
 }
