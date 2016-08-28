@@ -30,27 +30,13 @@ enum MenuPick {
 
 class partition_fxn_sample {
   public:
-    ~partition_fxn_sample() {
-        // clean up
-        delete [] this->P;
-        this->P = nullptr;
-        this->n = 0;
-    }
+    ~partition_fxn_sample(void);
+    partition_fxn_sample(const unsigned int);
+    partition_fxn_sample(void);
     mpf_float_1000 tau; // fundamental temperature
     mpf_float_1000 Z; // partition function at tau
     mpf_float_1000* P; // owning pointer to state probability array
-    unsigned int n; // size of state probability array
-    partition_fxn_sample(const unsigned int numstates) {
-        // allocate the probability state array
-        this->P = new mpf_float_1000[numstates];
-        this->n = numstates;
-    }
-    partition_fxn_sample(void) {
-        // empty
-        this->tau = this->Z = 0.0;
-        this->P = nullptr;
-        this->n = 0;
-    }
+    unsigned short int n; // size of state probability array
 };
 
 template <typename Num>
@@ -60,65 +46,34 @@ class progressBar {
     std::ostream* stream;
     unsigned int width;
   public:
-    progressBar(void) {
-        this->full = this->current = 0;
-        this->stream = nullptr;
-        this->width = 80;
-    }
-    progressBar(unsigned int w) {
-        this->full = this->current = 0;
-        this->stream = nullptr;
-        this->width = w;
-    }
-    void initialize(std::ostream& output, const Num total) {
-        // set the 100% mark
-        this->full = total;
-        // save the pointer to the stream
-        this->stream = &output;
-        // print out the initial, empty indicator
-        *(this->stream) << '[';
-        for (unsigned int i = 0; i < (this->width-2); i++) {
-            *(this->stream) << ' ';
-        }
-        // cap off the progress bar and return to the beginning of the line
-        *(this->stream) << "]\r[|";
-        // flush the buffer to make sure everything prints
-        this->stream->flush();
-    }
-    void increment(const Num now) {
-        Num frac = static_cast<Num>((this->width) * static_cast<double>(now) / this->full);
-        Num diff = frac - this->current;
-        for (Num i = 0; i < diff; i++) {
-            // increment with a pipe
-            *(this->stream) << '|';
-            // ensure it's printed
-            this->stream->flush();
-        }
-        this->current = frac;
-    }
-    ~progressBar(void) {
-        this->full = this->current = 0;
-        this->stream = nullptr;
-    }
+    ~progressBar(void);
+    progressBar(void);
+    progressBar(unsigned int);
+    void initialize(std::ostream&, const Num);
+    void increment(const Num);
 };
 
 //////////////////////
 ///// prototypes /////
 //////////////////////
 
-void            console_io_exponential(void);
-void            console_io_factorial(void);
-void            console_io_partition(void);
-void            console_io_tetration(void);
-void            display_menu(void);
+void        console_io_exponential(void);
+void        console_io_factorial(void);
+void        console_io_partition(void);
+void        console_io_tetration(void);
+void        display_menu(void);
 template <typename Numerical>
-Numerical       exp(const Numerical);
+Numerical   exp(const Numerical);
 template <typename Numerical>
-Numerical       factorial(const Numerical);
-void            printequals(std::ostream&, const unsigned int);
-MenuPick        read_choice(std::istream&);
+Numerical   factorial(const Numerical);
+template <typename T>
+bool        getInput(std::istream&, T&);
+template <typename T>
+bool        getRangedInput(std::istream&, T&, const T, const T);
+void        printequals(std::ostream&, const unsigned int);
+MenuPick    read_choice(std::istream&);
 template <typename Numerical>
-Numerical       tetrate(const Numerical, const unsigned int);
+Numerical   tetrate(const Numerical, const unsigned int);
 
 //////////////////
 ///// main() /////
@@ -147,6 +102,84 @@ int main(void) {
     } while (selection != quit);
 
     return 0;
+}
+
+///////////////////////////////////////
+///// Member Function Definitions /////
+///////////////////////////////////////
+
+/* class partition_fxn_sample */
+
+partition_fxn_sample::~partition_fxn_sample(void) {
+    // clean up
+    delete [] this->P;
+    this->P = nullptr;
+    this->n = 0;
+}
+
+partition_fxn_sample::partition_fxn_sample(void) {
+    // empty
+    this->tau = this->Z = 0.0;
+    this->P = nullptr;
+    this->n = 0;
+}
+
+partition_fxn_sample::partition_fxn_sample(const unsigned int numstates) {
+    // allocate the probability state array
+    this->P = new mpf_float_1000[numstates];
+    this->n = numstates;
+}
+
+/* class progressBar */
+
+template <typename Num>
+progressBar<Num>::~progressBar(void) {
+    this->full = this->current = 0;
+    this->stream = nullptr;
+}
+
+template <typename Num>
+progressBar<Num>::progressBar(void) {
+    this->full = this->current = 0;
+    this->stream = nullptr;
+    this->width = 80;
+}
+
+template <typename Num>
+progressBar<Num>::progressBar(unsigned int w) {
+    this->full = this->current = 0;
+    this->stream = nullptr;
+    this->width = w;
+}
+
+template <typename Num>
+void progressBar<Num>::initialize(std::ostream& output, const Num total) {
+    // set the 100% mark
+    this->full = total;
+    // save the pointer to the stream
+    this->stream = &output;
+    // print out the initial, empty indicator
+    *(this->stream) << '[';
+    for (unsigned int i = 0; i < (this->width-1); i++) {
+        *(this->stream) << ' ';
+    }
+    // cap off the progress bar and return to the beginning of the line
+    *(this->stream) << "]\r[|";
+    // flush the buffer to make sure everything prints
+    this->stream->flush();
+}
+
+template <typename Num>
+void progressBar<Num>::increment(const Num now) {
+    Num frac = static_cast<Num>((this->width) * static_cast<double>(now) / this->full);
+    Num diff = frac - this->current;
+    for (Num i = 0; i < diff; i++) {
+        // increment with a pipe
+        *(this->stream) << '|';
+        // ensure it's printed
+        this->stream->flush();
+    }
+    this->current = frac;
 }
 
 /////////////////////////////
@@ -186,7 +219,7 @@ void console_io_partition(void) {
     std::string filename; // the name of the file to save the results to
     progressBar<unsigned int> bar(100); // progress bar manipulator
     // variables
-    unsigned int states; // the number of states in the partition function
+    unsigned short int states; // the number of states in the partition function
     mpf_float_1000* E = nullptr; // array of state energies
     mpf_float_1000 T = 0.0; // (K) Kelvin temperature (LCV)
     double T_max = 0.0; // (K) maximum Kelvin temperature
@@ -195,34 +228,33 @@ void console_io_partition(void) {
     // constants
     const mpf_float_1000 k_B = 8.6173324e-5; // (eV/K) Boltzmann constant
 
+    // whether the stream input was acceptable
+    bool good;
     cout << "\nEnter a filename to save the results (CSV format, will be overwritten): ";
     std::getline(cin, filename);
     cout << "How many states does the partition function have? ";
-    cin  >> states;
+    getInput(cin, states);
     cout << "What is the maximum temperature to calculate (in K)?: ";
-    cin  >> T_max;
+    do {
+        good = getRangedInput(cin, T_max, 1e-100, std::numeric_limits<double>::max());
+        if (!good) {
+            cout << "Please enter a finite, positive temperature: ";
+        }
+    } while (!good);
     cout << "What is the minimum temperature to calculate (in K)?: ";
-    cin  >> T_min;
+    do {
+        good = getRangedInput(cin, T_min, 1e-100, T_max);
+        if (!good || T_min == T_max) {
+            cout << "Please enter a finite, positive temperature less than the maximum temperature: ";
+        }
+    } while (!good);
     cout << "How many Kelvins should the program step for each sample? ";
-    cin  >> step_size;
-
-    // don't allow absolute zero (mathematical singularity exists)
-    if (T_min == 0.0) {
-        T_min = 1e-10;
-    }
-    // don't allow negative temps
-    if (T_min < 0.0) {
-        T_min = 1e-10;
-    }
-    if (T_max < 0.0) {
-        T_max = T_min + 10 * step_size;
-    }
-    // if the max and min are backwards, silently fix it
-    if (T_min > T_max) {
-        double temp = T_min;
-        T_min = T_max;
-        T_max = temp;
-    }
+    do {
+        good = getRangedInput(cin, step_size, 1e-100, T_max - T_min);
+        if (!good) {
+            cout << "Please enter a finite, positive value less than the temperature range: ";
+        }
+    } while (!good);
 
     // calculate the number of samples
     steps = static_cast<unsigned int>((T_max - T_min) / step_size);
@@ -235,9 +267,16 @@ void console_io_partition(void) {
     // get the energies
     for (unsigned int i = 0; i < states; i++) {
         cout << "Enter the energy of the " << i+1
-             << (i+1 == 1 ? "st" : (i+1 % 10 == 2 ? "nd" : (i+1 % 10 == 3 ? "rd" : "th")))
+             << ((i+1 % 10 == 1 && i+1 % 100 != 11) ? "st" :
+                 ((i+1 % 10 == 2 && i+1 % 100 != 12) ? "nd" :
+                  ((i+1 % 10 == 3 && i+1 % 100 != 13) ? "rd" : "th")))
              << " state in eV: ";
-        cin  >> E[i];
+        do {
+            good = getInput(cin, E[i]);
+            if (!good) {
+                cout << "Please enter a number: ";
+            }
+        } while (!good);
     }
 
     cout << "Please wait . . .\n";
@@ -369,6 +408,51 @@ Numerical factorial(const Numerical n) {
     }
 
     return result;
+}
+
+/*
+ * safely extract validated input from a stream
+ * @param input         the stream to read from
+ * @param value         the variable to save the data to
+ * @return              whether or not the stream extraction was successful
+ */
+template <typename T>
+bool getInput(std::istream& input, T& value) {
+    bool success = true;
+    input >> value;
+
+    if (!input.good()) {
+        success = false;
+        // clear the flags
+        input.clear();
+        // empty the stream
+        input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+    else {
+        // empty the stream
+        input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
+    return success;
+}
+
+/*
+ * safely extract input from a stream and ensure that it falls within a certain range
+ * @param input         the stream to read from
+ * @param value         the variable to save to
+ * @param min           the minimum acceptable value (inclusive)
+ * @param max           the maximum acceptable value (inclusive)
+ */
+template <typename T>
+bool getRangedInput(std::istream& input, T& value, const T min, const T max) {
+    bool success = getInput<T>(input, value);
+    if (success) {
+        if (value < min || value > max) {
+            success = false;
+        }
+    }
+
+    return success;
 }
 
 /*
