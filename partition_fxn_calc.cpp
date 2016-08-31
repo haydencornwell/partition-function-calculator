@@ -118,8 +118,6 @@ void console_io_partition(void) {
     double T_max = 0.0; // (K) maximum Kelvin temperature
     double T_min = 0.0; // (K) minimum Kelvin temperature
     double step_size = 0.0; // (K) temperature step size
-    // constants
-    const mpf_float_1000 k_B = 8.6173324e-5; // (eV/K) Boltzmann constant
 
     // whether the stream input was acceptable
     bool good;
@@ -150,7 +148,7 @@ void console_io_partition(void) {
     } while (!good);
 
     // calculate the number of samples
-    steps = static_cast<unsigned int>((T_max - T_min) / step_size);
+    steps = 1 + static_cast<unsigned int>((T_max - T_min) / step_size);
 
     // allocate the energy array
     E = new mpf_float_1000[states];
@@ -161,8 +159,8 @@ void console_io_partition(void) {
     for (unsigned int i = 0; i < states; i++) {
         cout << "Enter the energy of the " << i+1
              << ((i+1 % 10 == 1 && i+1 % 100 != 11) ? "st" :
-                 ((i+1 % 10 == 2 && i+1 % 100 != 12) ? "nd" :
-                  ((i+1 % 10 == 3 && i+1 % 100 != 13) ? "rd" : "th")))
+                ((i+1 % 10 == 2 && i+1 % 100 != 12) ? "nd" :
+                ((i+1 % 10 == 3 && i+1 % 100 != 13) ? "rd" : "th")))
              << " state in eV: ";
         do {
             good = getInput(cin, E[i]);
@@ -178,30 +176,16 @@ void console_io_partition(void) {
     
     // initialize the array
     for (unsigned int i = 0; i < steps; i++) {
-        sample[i].P = new mpf_float_1000[states];
-        sample[i].n = states;
-        for (unsigned int j = 0; j < states; j++) {
-            sample[i].P[j] = 0.0;
-        }
+        sample[i].initialize(states);
     }
 
     // start at the minimum temp
     T = T_min;
     // acquire each sample
-    for(unsigned int i = 0; i < steps; i++) {
-        if (i != 0) {
-            T += step_size;
-        }
-        sample[i].tau = k_B * T;
-        // calculate the partition function; Z(tau) == \Sum_{j=0}^{\Infinity} \exp{-E / \tau}
-        for (unsigned int j = 0; j < states; j++) {
-            sample[i].P[j] = exp(-E[j] / sample[i].tau);
-            sample[i].Z += sample[i].P[j];
-        }
-        // divide by Z to get the probability for each state
-        for (unsigned int j = 0; j < states; j++) {
-            sample[i].P[j] /= sample[i].Z;
-        }
+    sample[0].calculate(T, E);
+    for(unsigned int i = 1; i < steps; i++) {
+        T += step_size;
+        sample[i].calculate(T, E);
         
         // let the user know the program hasn't died yet
         bar.increment(i);
@@ -210,17 +194,20 @@ void console_io_partition(void) {
 
     file.open(filename.c_str(), std::ofstream::out);
     if (file.is_open()) {
-        file << std::setprecision(16) << "All energies are in eV\n\ntau,Z(tau)";
         // output the heading
+        file << std::setprecision(16) << "All energies are in eV\n\nT (K),tau,Z(tau)";
         for (unsigned int i = 0; i < states; i++) {
-            file << ",P_" << i+1;
+            file << ",P_" << i+1 << "(tau)";
         }
         file << '\n'; // start on the next row
+
         // output the data for each sample
         for (unsigned int i = 0; i < steps; i++) {
-            file << sample[i].tau << ',' << sample[i].Z; // save tau and Z(tau)
+            file << sample[i].get_T()   << ',' // temp
+                 << sample[i].get_tau() << ',' // fundamental temp / thermal energy
+                 << sample[i].get_Z();         // partition function
             for (unsigned int j = 0; j < states; j++) {
-                file << ',' << sample[i].P[j]; // output the probabilities
+                file << ',' << sample[i].get_P_i(j); // output the probabilities
             }
             file << '\n'; // next row
         }
@@ -234,6 +221,8 @@ void console_io_partition(void) {
     // deallocate everything
     delete [] sample; // the destructors take care of the objects' pointers
     sample = nullptr;
+    delete [] E;
+    E = nullptr;
 }
 
 /*
@@ -268,11 +257,11 @@ void console_io_tetration(void) {
  */
 void display_menu(void) {
     cout << "Please select an option by typing its number:\n"
-         << "1. Tetrate a real number\n"
-         << "2. Calculate a factorial\n"
-         << "3. Exponentiate a real number\n"
-         << "4. Evaluate the double-polymer electrode's partition function\n"
-         << "5. Exit program\n";
+         << " 1. Tetrate a real number\n"
+         << " 2. Calculate a factorial\n"
+         << " 3. Exponentiate a real number\n"
+         << " 4. Evaluate a partition function along a temperature range\n"
+         << " 5. Exit program\n";
 }
 
 /*

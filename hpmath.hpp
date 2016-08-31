@@ -22,14 +22,26 @@ enum MenuPick {
 };
 
 class partition_fxn_sample {
+    const mpf_float_1000 k_B = 8.6173324e-5; // (eV/K) Boltzmann constant
+    unsigned short int n; // size of state probability array
+    mpf_float_1000 tau; // fundamental temperature
+    mpf_float_1000 Z; // partition function at tau
+    mpf_float_1000* P; // owning pointer to state probability array
+    mpf_float_1000 T; // temperature in K
   public:
     ~partition_fxn_sample(void);
     partition_fxn_sample(const unsigned int);
     partition_fxn_sample(void);
-    mpf_float_1000 tau; // fundamental temperature
-    mpf_float_1000 Z; // partition function at tau
-    mpf_float_1000* P; // owning pointer to state probability array
-    unsigned short int n; // size of state probability array
+    // accessors
+    mpf_float_1000 get_tau(void) {return this->tau;}
+    mpf_float_1000 get_Z(void) {return this->Z;}
+    mpf_float_1000 get_P_i(unsigned short int i) {return (i >= 0 && i < n ? this->P[i] : 0);}
+    mpf_float_1000 get_T(void) {return this->T;}
+    // calculation
+    template <typename Numerical>
+    void calculate(Numerical, Numerical*);
+    // initialization in case the default constructor was used
+    void initialize(unsigned short int);
 };
 
 template <typename Num>
@@ -72,6 +84,38 @@ partition_fxn_sample::partition_fxn_sample(const unsigned int numstates) {
     this->n = numstates;
 }
 
+/*
+ * calculate the values at the given temperature and state energies
+ * @param temp          the current temperature in Kelvins
+ * @param E             a pointer to an array of state energy values in eV
+ */
+template <typename Numerical>
+void partition_fxn_sample::calculate(Numerical temp, Numerical* E) {
+    this->T = temp;
+    this->tau = this->k_B * this->T;
+    // calculate the partition function; Z(tau) == \Sum_{j=0}^{\Infinity} \exp{-E / \tau}
+    for (unsigned int i = 0; i < this->n; i++) {
+        this->P[i] = exp(-E[i] / this->tau);
+        this->Z += this->P[i];
+    }
+    // divide by Z to get the probability for each state
+    for (unsigned int i = 0; i < this->n; i++) {
+        this->P[i] /= this->Z;
+    }
+}
+
+/*
+ * dynamically allocate the array and initialize everything
+ * @param i             the size of the array
+ */
+void partition_fxn_sample::initialize(unsigned short int i) {
+    this->P = new mpf_float_1000[i];
+    this->n = i;
+    for (unsigned int j = 0; j < this->n; j++) {
+        this->P[j] = 0.0;
+    }
+}
+
 /* class progressBar */
 
 template <typename Num>
@@ -94,6 +138,10 @@ progressBar<Num>::progressBar(unsigned int w) {
     this->width = w;
 }
 
+/*
+ * set up a text-based progress bar in the console output with a specified width
+ * @param total         the full size of the index
+ */
 template <typename Num>
 void progressBar<Num>::initialize(std::ostream& output, const Num total) {
     // set the 100% mark
@@ -102,7 +150,7 @@ void progressBar<Num>::initialize(std::ostream& output, const Num total) {
     this->stream = &output;
     // print out the initial, empty indicator
     *(this->stream) << '[';
-    for (unsigned int i = 0; i < (this->width-1); i++) {
+    for (unsigned int i = 0; i < (this->width); i++) {
         *(this->stream) << ' ';
     }
     // cap off the progress bar and return to the beginning of the line
@@ -111,6 +159,11 @@ void progressBar<Num>::initialize(std::ostream& output, const Num total) {
     this->stream->flush();
 }
 
+/*
+ * increments the progress bar by the fraction of the task that has been completed
+ * since the last call
+ * @param now           the current value of the index
+ */
 template <typename Num>
 void progressBar<Num>::increment(const Num now) {
     Num frac = static_cast<Num>((this->width) * static_cast<double>(now) / this->full);
