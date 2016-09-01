@@ -22,16 +22,17 @@
 ///// prototypes /////
 //////////////////////
 
-void        console_io_exponential(void);
-void        console_io_factorial(void);
-void        console_io_partition(void);
-void        console_io_tetration(void);
-void        display_menu(void);
+void     console_io_exponential(void);
+void     console_io_factorial(void);
+void     console_io_ln(void);
+void     console_io_partition(void);
+void     console_io_tetration(void);
+void     display_menu(void);
 template <typename T>
-bool        getInput(std::istream&, T&);
+bool     getInput(std::istream&, T&);
 template <typename T>
-bool        getRangedInput(std::istream&, T&, const T, const T);
-MenuPick    read_choice(std::istream&);
+bool     getRangedInput(std::istream&, T&, const T, const T);
+MenuPick read_choice(void);
 
 //////////////////
 ///// main() /////
@@ -41,7 +42,7 @@ int main(void) {
     MenuPick selection;
     do {
         display_menu();
-        selection = read_choice(cin);
+        selection = read_choice();
         if (selection == tetration) {
             console_io_tetration();
         }
@@ -50,6 +51,9 @@ int main(void) {
         }
         else if (selection == exponentiate) {
             console_io_exponential();
+        }
+        else if (selection == log_base_n) {
+            console_io_ln();
         }
         else if (selection == partition) {
             console_io_partition();
@@ -99,6 +103,24 @@ void console_io_factorial(void) {
     } while (!good || n < 0);
     result = factorial(n);
     cout << "The result of " << n << "! is " << result << "\n\n";
+}
+
+/*
+ * get and display a natural logarithm
+ */
+void console_io_ln(void) {
+    mpf_float_1000 x = 0.0;
+    mpf_float_1000 result = 0.0;
+    cout << "\nPlease enter a positive real number: ";
+    bool good;
+    do {
+        good = getInput(cin, x);
+        if (!good || x <= 0) {
+            cout << "Please enter a positive number: ";
+        }
+    } while (!good || x < 0);
+    result = ln(x);
+    cout << "The result of ln(" << x << ") is " << result << "\n\n";
 }
 
 /*
@@ -260,8 +282,9 @@ void display_menu(void) {
          << " 1. Tetrate a real number\n"
          << " 2. Calculate a factorial\n"
          << " 3. Exponentiate a real number\n"
-         << " 4. Evaluate a partition function along a temperature range\n"
-         << " 5. Exit program\n";
+         << " 4. Calculate a natural logarithm\n"
+         << " 5. Evaluate a partition function along a temperature range\n"
+         << " 6. Exit program\n";
 }
 
 /*
@@ -314,14 +337,14 @@ bool getRangedInput(std::istream& input, T& value, const T min, const T max) {
  * @param input         the input stream to read
  * @return              the selection
  */
-MenuPick read_choice(std::istream& input) {
+MenuPick read_choice(void) {
     MenuPick sel;
     int entered;
     bool good;
     do {
-        good = getRangedInput(cin, entered, 1, 5);
+        good = getRangedInput(cin, entered, 1, 6);
         if (!good) {
-            cout << "Please enter a number between 1 and 5: ";
+            cout << "Please enter a number between 1 and 6: ";
         }
     } while (!good);
     if (entered == 1) {
@@ -334,6 +357,9 @@ MenuPick read_choice(std::istream& input) {
         sel = exponentiate;
     }
     else if (entered == 4) {
+        sel = log_base_n;
+    }
+    else if (entered == 5) {
         sel = partition;
     }
     else {

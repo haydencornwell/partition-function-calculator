@@ -18,6 +18,7 @@ enum MenuPick {
     factorials,
     exponentiate,
     partition,
+    log_base_n,
     quit
 };
 
@@ -35,7 +36,7 @@ class partition_fxn_sample {
     // accessors
     mpf_float_1000 get_tau(void) {return this->tau;}
     mpf_float_1000 get_Z(void) {return this->Z;}
-    mpf_float_1000 get_P_i(unsigned short int i) {return (i >= 0 && i < n ? this->P[i] : 0);}
+    mpf_float_1000 get_P_i(unsigned short int i) {return (i < n ? this->P[i] : 0);}
     mpf_float_1000 get_T(void) {return this->T;}
     // calculation
     template <typename Numerical>
@@ -249,6 +250,24 @@ Numerical exp(const Numerical x) {
     }
 
     return result;
+}
+
+/*
+ * calculate the natural logarithm of a positive real number
+ * @param x             the number to calculate ln(x)
+ * @return              ln(x)
+ */
+template <typename Numerical>
+Numerical ln(const Numerical x) {
+    Numerical y_n = x;
+    Numerical y_np1 = 0.0;
+    if (x > 0) {
+        while (abs(y_np1 - y_n) > 1e-300) {
+            y_n = y_np1;
+            y_np1 = y_n + 2 * (x - exp(y_n)) / (x + exp(y_n));
+        }
+    }
+    return y_np1;
 }
 
 #endif
