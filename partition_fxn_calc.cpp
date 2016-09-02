@@ -17,6 +17,7 @@
     using namespace boost::multiprecision;
 
 #include "hpmath.hpp"
+#include "classes.hpp"
 
 //////////////////////
 ///// prototypes /////
