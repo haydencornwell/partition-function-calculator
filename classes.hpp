@@ -19,21 +19,21 @@ enum MenuPick {
 ///////////////////
 
 class partition_fxn_sample {
-    const mpf_float_1000 k_B = 8.6173324e-5; // (eV/K) Boltzmann constant
+    const mpfr_float_1000 k_B = 8.6173324e-5; // (eV/K) Boltzmann constant
     unsigned short int n; // size of state probability array
-    mpf_float_1000 tau; // fundamental temperature
-    mpf_float_1000 Z; // partition function at tau
-    mpf_float_1000* P; // owning pointer to state probability array
-    mpf_float_1000 T; // temperature in K
+    mpfr_float_1000 tau; // fundamental temperature
+    mpfr_float_1000 Z; // partition function at tau
+    mpfr_float_1000* P; // owning pointer to state probability array
+    mpfr_float_1000 T; // temperature in K
   public:
     ~partition_fxn_sample(void);
     partition_fxn_sample(const unsigned int);
     partition_fxn_sample(void);
     // accessors
-    mpf_float_1000 get_tau(void) {return this->tau;}
-    mpf_float_1000 get_Z(void) {return this->Z;}
-    mpf_float_1000 get_P_i(unsigned short int i) {return (i < n ? this->P[i] : 0);}
-    mpf_float_1000 get_T(void) {return this->T;}
+    mpfr_float_1000 get_tau(void) {return this->tau;}
+    mpfr_float_1000 get_Z(void) {return this->Z;}
+    mpfr_float_1000 get_P_i(unsigned short int i) {return (i < n ? this->P[i] : 0);}
+    mpfr_float_1000 get_T(void) {return this->T;}
     // calculation
     template <typename Numerical>
     void calculate(Numerical, Numerical*);
@@ -78,7 +78,7 @@ partition_fxn_sample::partition_fxn_sample(void) {
 partition_fxn_sample::partition_fxn_sample(const unsigned int numstates) {
     this->tau = this->Z = 0.0;
     // allocate the probability state array
-    this->P = new mpf_float_1000[numstates];
+    this->P = new mpfr_float_1000[numstates];
     this->n = numstates;
     for (unsigned int i = 0; i < this->n; i++) {
         this->P[i] = 0.0;
@@ -110,7 +110,7 @@ void partition_fxn_sample::calculate(Numerical temp, Numerical* E) {
  * @param i             the size of the array
  */
 void partition_fxn_sample::initialize(unsigned short int i) {
-    this->P = new mpf_float_1000[i];
+    this->P = new mpfr_float_1000[i];
     this->n = i;
     for (unsigned int j = 0; j < this->n; j++) {
         this->P[j] = 0.0;

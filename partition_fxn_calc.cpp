@@ -13,8 +13,9 @@
 #include <string>
 #include <fstream>
 #include <cmath>
-#include <boost/multiprecision/gmp.hpp>
+#include <boost/multiprecision/mpfr.hpp>
     using namespace boost::multiprecision;
+#include <boost/multiprecision/cpp_int.hpp>
 
 #include "hpmath.hpp"
 #include "classes.hpp"
@@ -72,9 +73,8 @@ int main(void) {
 ///////////////////////////////////
 
 void console_io_exponential(void) {
-    mpf_float_1000 x = 0.0;
-    //unsigned int terms = 0;
-    mpf_float_1000 result = 0.0;
+    mpfr_float_1000 x = 0.0;
+    mpfr_float_1000 result = 0.0;
     cout << "\nEnter the number to exponentiate: ";
     bool good;
     do {
@@ -92,8 +92,8 @@ void console_io_exponential(void) {
  * get and display a tetration to the standard console i/o
  */
 void console_io_factorial(void) {
-    mpz_int n = 0;
-    mpz_int result = 0;
+    cpp_int n = 0;
+    cpp_int result = 0;
     cout << "\nPlease enter an integer: ";
     bool good;
     do {
@@ -110,8 +110,8 @@ void console_io_factorial(void) {
  * get and display a natural logarithm
  */
 void console_io_ln(void) {
-    mpf_float_1000 x = 0.0;
-    mpf_float_1000 result = 0.0;
+    mpfr_float_1000 x = 0.0;
+    mpfr_float_1000 result = 0.0;
     cout << "\nPlease enter a positive real number: ";
     bool good;
     do {
@@ -136,8 +136,8 @@ void console_io_partition(void) {
     progressBar<unsigned int> bar(100); // progress bar manipulator
     // variables
     unsigned short int states; // the number of states in the partition function
-    mpf_float_1000* E = nullptr; // array of state energies
-    mpf_float_1000 T = 0.0; // (K) Kelvin temperature (LCV)
+    mpfr_float_1000* E = nullptr; // array of state energies
+    mpfr_float_1000 T = 0.0; // (K) Kelvin temperature (LCV)
     double T_max = 0.0; // (K) maximum Kelvin temperature
     double T_min = 0.0; // (K) minimum Kelvin temperature
     double step_size = 0.0; // (K) temperature step size
@@ -174,7 +174,7 @@ void console_io_partition(void) {
     steps = 1 + static_cast<unsigned int>((T_max - T_min) / step_size);
 
     // allocate the energy array
-    E = new mpf_float_1000[states];
+    E = new mpfr_float_1000[states];
     // allocate the sample array
     sample = new partition_fxn_sample[steps];
 
@@ -252,9 +252,9 @@ void console_io_partition(void) {
  * get and display a tetration to the standard console i/o
  */
 void console_io_tetration(void) {
-    mpf_float_1000 base = 0.0;
+    mpfr_float_1000 base = 0.0;
     int hyperpower = 0;
-    mpf_float_1000 tetration_result = 0.0;
+    mpfr_float_1000 tetration_result = 0.0;
     bool good;
     cout << "\nPlease enter a base (a): ";
     do {
