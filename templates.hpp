@@ -1,22 +1,44 @@
+/*
+ * Assorted free-floating functions and templates
+ */
+
 #ifndef TEMPLATES_HPP
     #define TEMPLATES_HPP
 
 #include <iostream>
-#include <iomanip>
 #include <limits>
 #include <string>
-#include <fstream>
-#include <cmath>
+#include <boost/math/constants/constants.hpp>
 #include <boost/multiprecision/mpfr.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
     using namespace boost::multiprecision;
 
 /////////////////////
 ///// Operators /////
 /////////////////////
 
-mpfr_float_1000 operator"" _mpr1k(long double x) {return mpfr_float_1000(x);}
-mpfr_float_1000 operator"" _mpr1k(unsigned long long int x) {return mpfr_float_1000(x);}
+mpfr_float_1000 inline operator"" _mpr1k(long double x) {return mpfr_float_1000(x);}
+mpfr_float_1000 inline operator"" _mpr1k(unsigned long long int x) {return mpfr_float_1000(x);}
+
+/////////////////////
+///// Constants /////
+/////////////////////
+/**
+ * mathematical and physical constants, as mpfr_float_1000's
+ */
+namespace Constants {
+    //! (eV/K) Boltzmann constant
+    const mpfr_float_1000 k_B = 8.6173324e-5_mpr1k;
+    //! (per mol) Avogadro constant
+    const mpfr_float_1000 N_A = 6.022140857e23_mpr1k;
+    //! (V) absolute potential of an electron at rest in a vacuum vs SHE
+    const mpfr_float_1000 V_abs = 4.44_mpr1k;
+    //! (unitless) pi, to 1000 digits
+    const mpfr_float_1000 mpfr_pi = boost::math::constants::pi<mpfr_float_1000>();
+    //! (F / m) electric permittivity
+    const mpfr_float_1000 permittivity = 8.854187817e-12_mpr1k;
+    //! (N * m^2 / C^2) Coulomb's constant
+    const mpfr_float_1000 k_e = 1_mpr1k / (4_mpr1k * mpfr_pi * permittivity);
+}
 
 ///////////////////////////////////
 ///// Free-floating functions /////

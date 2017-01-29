@@ -1,9 +1,11 @@
+/*
+ * High-precision mathematical functions
+ */
+
 #ifndef HPMATH_HPP
     #define HPMATH_HPP
 
 #include <cmath>
-#include <boost/multiprecision/gmp.hpp>
-    using namespace boost::multiprecision;
 
 //////////////////////////////
 ///// Function Templates /////
@@ -11,6 +13,7 @@
 
 /*
  * calculate a factorial of a nonnegative integer
+ * @param n             the nonnegative integer
  */
 template <typename Numerical>
 Numerical factorial(const Numerical n) {

@@ -18,35 +18,89 @@
 
 #include "classes.hpp"
 
+enum MenuChoice {
+    varyTemp,
+    varyVoltage,
+    varyMagnet,
+    quit
+};
+
+template <typename Num>
+void sweepTemperature(Thermodynamics::SystemManager<Num>&);
+template <typename Num>
+void sweepElectricField(Thermodynamics::SystemManager<Num>&);
+
 //////////////////
 ///// main() /////
 //////////////////
 
 int main(void) {
-    mpfr_float_1000 T_current;
-    progressBar<unsigned int> pbar(80);
-    SystemManager<mpfr_float_1000> system;
+    Thermodynamics::SystemManager<mpfr_float_1000> system;
+    system.params.acquire("config.cfg");
 
-    system.initialize("config.cfg");
-    T_current = system.params.T_min() - system.params.T_step();
-    pbar.initialize(cout, system.params.n_samp());
+    sweepTemperature(system);
 
-    for (unsigned int i = 0; i < system.params.n_samp(); i++) {
-        T_current += system.params.T_step();
-        system.sample[i].calculate(T_current, system.params);
-        pbar.increment(i);
-    }
-    pbar.end();
     cout << "\nSaving...\n";
 
     bool success;
+    unsigned short tries = 3;
     do {
         success = system.save_to_disk(system.params.filename);
         if (!success) {
             cout << "The file could not be saved. Please enter a different file name: ";
             cin  >> system.params.filename;
         }
-    } while (!success);
+        tries--;
+    } while (!success && (tries > 0));
 
     return 0;
+}
+
+///////////////////////////
+///// other functions /////
+///////////////////////////
+
+/**
+ *
+ */
+template <typename Num>
+void sweepTemperature(Thermodynamics::SystemManager<Num>& system) {
+    progressBar<unsigned int> pbar(80);
+    Num T_min, T_max, T_step, T_current;
+
+    cout << "What is the minimum temperature to calculate? ";
+    getRangedInput(cin, T_min, static_cast<Num>(1e-100), static_cast<Num>(1e100));
+    cout << "What is the maximum temperature to calculate? ";
+    getRangedInput(cin, T_max, static_cast<Num>(1e-100), static_cast<Num>(1e100));
+    cout << "What should the temperature step size be? ";
+    getRangedInput(cin, T_step, static_cast<Num>(1e-100), static_cast<Num>(1e100));
+
+    const unsigned short int n_samp = static_cast<unsigned short int>(static_cast<Num>((T_max - T_min) / T_step));
+    system.initialize(n_samp);
+
+    // just set total potential to zero for now
+    for (unsigned short i = 0; i < system.params.states(); i++) {
+        system.params.set_mu(i, 0.0);
+    }
+    
+    std::cout << "Please wait . . .\n";
+    pbar.initialize(cout, n_samp);
+
+    T_current = T_min - T_step;
+    for (unsigned short i = 0; i < n_samp; i++) {
+        T_current += T_step;
+        system.params.set_T(T_current);
+        system.sample[i].calculate(system.params);
+        pbar.increment(i);
+    }
+
+    pbar.end();
+}
+
+/**
+ *
+ */
+template <typename Num>
+void sweepElectricField(Thermodynamics::SystemManager<Num>& system) {
+    
 }
